@@ -2,15 +2,30 @@ package com._4point.aem.watchedfolder.core;
 
 import org.osgi.service.component.annotations.Component;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.http.Header;
+import org.apache.http.HeaderElement;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.InputStreamBody;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
@@ -25,6 +40,13 @@ import com.adobe.aemfd.watchfolder.service.api.ProcessorContext;
 		   )
 public class WatchedFolderContentProcessor implements ContentProcessor {
 	
+	
+	private final String endpointLocation;
+
+	public WatchedFolderContentProcessor(String endpointLocation) {
+		this.endpointLocation = endpointLocation;
+	}
+
 	/**
 	 *	Called by AEM's Watched Folder mechanism.
 	 */
@@ -60,11 +82,39 @@ public class WatchedFolderContentProcessor implements ContentProcessor {
 	 * @return
 	 */
 	public Entry<String, byte[]> processInputs(Stream<Entry<String, InputStream>> inputs) {
-		
-		// TODO: Convert inputs into a multipart/form-data POST
-		// TODO: Perform the POST
-		// TODO: Convert response to return value
-		
-		return new AbstractMap.SimpleEntry<>("dummy", "foo".getBytes(StandardCharsets.UTF_8));
+
+		HttpUriRequest multipartRequest = buildRequest(inputs, endpointLocation);
+
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			HttpResponse httpResponse = httpclient.execute(multipartRequest);
+			
+			ByteArrayOutputStream bas = new ByteArrayOutputStream();
+			HttpEntity entity = httpResponse.getEntity();
+			Header contentType = entity.getContentType();
+			HeaderElement[] contentTypeElements = contentType.getElements();
+			entity.writeTo(bas);
+
+			// TODO: Convert response to return value
+			return new AbstractMap.SimpleEntry<>("dummy", bas.toByteArray());
+		} catch (IOException e) {
+			throw new IllegalStateException("Error occurred during POST to '" + endpointLocation + "'.", e);
+		}
+
+	}
+
+	private static HttpUriRequest buildRequest(Stream<Entry<String, InputStream>> inputs, String endpointLocation) {
+		RequestBuilder reqbuilder = RequestBuilder.post(endpointLocation);
+		reqbuilder.setEntity(toMultipartEntiry(inputs.collect(Collectors.toList())));
+		return reqbuilder.build();
+	}
+
+	private static HttpEntity toMultipartEntiry(List<Entry<String, InputStream>> inputsList) {
+		MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+		for (Entry<String, InputStream> entry : inputsList) {
+			builder = builder.addPart(entry.getKey(), new InputStreamBody(entry.getValue(), entry.getKey()));
+		}
+		return builder.build();
 	}
 }
+
+

@@ -54,6 +54,7 @@
 		<io.wcm.testing.aem-mock.junit5.version>5.1.2</io.wcm.testing.aem-mock.junit5.version>
 		<org.apache.sling.testing.caconfig-mock-plugin.version>1.4.0</org.apache.sling.testing.caconfig-mock-plugin.version>
 		<slf4j-test.version>1.2.0</slf4j-test.version>
+		<wiremock.version>2.35.0</wiremock.version>
 	</properties>
 
 	<build>
@@ -471,23 +472,6 @@ Bundle-DocURL:
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-			<dependency>
-				<groupId>javax.annotation</groupId>
-				<artifactId>javax.annotation-api</artifactId>
-				<version>${javax.annotation-api.version}</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>com.adobe.cq</groupId>
-				<artifactId>core.wcm.components.core</artifactId>
-				<version>${core.wcm.components.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>com.adobe.cq</groupId>
-				<artifactId>core.wcm.components.content</artifactId>
-				<type>zip</type>
-				<version>${core.wcm.components.version}</version>
-			</dependency>
 			<!-- Testing -->
 			<dependency>
 				<groupId>org.junit</groupId>
@@ -496,61 +480,73 @@ Bundle-DocURL:
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-			<dependency>
-				<groupId>org.mockito</groupId>
-				<artifactId>mockito-core</artifactId>
-				<version>4.1.0</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.mockito</groupId>
-				<artifactId>mockito-junit-jupiter</artifactId>
-				<version>${mockito.version}</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<groupId>junit-addons</groupId>
-				<artifactId>junit-addons</artifactId>
-				<version>${junit-addons.version}</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<groupId>io.wcm</groupId>
-				<artifactId>io.wcm.testing.aem-mock.junit5</artifactId>
-				<version>${io.wcm.testing.aem-mock.junit5.version}</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.sling</groupId>
-				<artifactId>org.apache.sling.testing.caconfig-mock-plugin</artifactId>
-				<version>${org.apache.sling.testing.caconfig-mock-plugin.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>com.adobe.cq</groupId>
-				<artifactId>core.wcm.components.testing.aem-mock-plugin</artifactId>
-				<version>${core.wcm.components.version}</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<groupId>uk.org.lidalia</groupId>
-				<artifactId>slf4j-test</artifactId>
-				<version>${slf4j-test.version}</version>
-				<scope>test</scope>
-			</dependency>
-            <!-- AEM Forms SDK -->
-			<dependency>
-			  <groupId>com.adobe.aemfd</groupId>
-			  <artifactId>aemfd-client-sdk</artifactId>
-			  <version>${aemfd-client-sdk.version}</version>
-			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
 	<dependencies>
 		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>javax.annotation-api</artifactId>
+			<version>${javax.annotation-api.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.adobe.cq</groupId>
+			<artifactId>core.wcm.components.core</artifactId>
+			<version>${core.wcm.components.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.adobe.cq</groupId>
+			<artifactId>core.wcm.components.content</artifactId>
+			<type>zip</type>
+			<version>${core.wcm.components.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<version>4.1.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+			<version>${mockito.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>junit-addons</groupId>
+			<artifactId>junit-addons</artifactId>
+			<version>${junit-addons.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.wcm</groupId>
+			<artifactId>io.wcm.testing.aem-mock.junit5</artifactId>
+			<version>${io.wcm.testing.aem-mock.junit5.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.sling</groupId>
+			<artifactId>org.apache.sling.testing.caconfig-mock-plugin</artifactId>
+			<version>${org.apache.sling.testing.caconfig-mock-plugin.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.adobe.cq</groupId>
+			<artifactId>core.wcm.components.testing.aem-mock-plugin</artifactId>
+			<version>${core.wcm.components.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>uk.org.lidalia</groupId>
 			<artifactId>slf4j-test</artifactId>
+			<version>${slf4j-test.version}</version>
 			<scope>test</scope>
+		</dependency>
+        <!-- AEM Forms SDK -->
+		<dependency>
+		  <groupId>com.adobe.aemfd</groupId>
+		  <artifactId>aemfd-client-sdk</artifactId>
+		  <version>${aemfd-client-sdk.version}</version>
 		</dependency>
 		<!-- OSGi Dependencies -->
 		<dependency>
@@ -611,10 +607,6 @@ Bundle-DocURL:
 			<artifactId>javax.servlet-api</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>javax.annotation</groupId>
-			<artifactId>javax.annotation-api</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.sling</groupId>
 			<artifactId>org.apache.sling.servlets.annotations</artifactId>
 		</dependency>
@@ -623,18 +615,8 @@ Bundle-DocURL:
 			<artifactId>uber-jar</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.adobe.cq</groupId>
-			<artifactId>core.wcm.components.core</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.sling</groupId>
 			<artifactId>org.apache.sling.models.api</artifactId>
-		</dependency>
-
-        <!-- AEM Forms SDK -->
-		<dependency>
-			<groupId>com.adobe.aemfd</groupId>
-			<artifactId>aemfd-client-sdk</artifactId>
 		</dependency>
 
 		<!-- Testing -->
@@ -643,40 +625,16 @@ Bundle-DocURL:
 			<artifactId>junit-jupiter</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-core</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-junit-jupiter</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>junit-addons</groupId>
-			<artifactId>junit-addons</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>io.wcm</groupId>
-			<artifactId>io.wcm.testing.aem-mock.junit5</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.sling</groupId>
-			<artifactId>org.apache.sling.testing.caconfig-mock-plugin</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.adobe.cq</groupId>
-			<artifactId>core.wcm.components.testing.aem-mock-plugin</artifactId>
-			<scope>test</scope>
-		</dependency>
 		<!-- Required to be able to support injection with @Self and @Via -->
 		<dependency>
 			<groupId>org.apache.sling</groupId>
 			<artifactId>org.apache.sling.models.impl</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.github.tomakehurst</groupId>
+			<artifactId>wiremock-jre8</artifactId>
+			<version>${wiremock.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
