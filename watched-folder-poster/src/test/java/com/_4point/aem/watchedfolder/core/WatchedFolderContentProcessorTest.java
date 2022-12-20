@@ -12,9 +12,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-
+@Tag("requiresWireMockRunning")
 class WatchedFolderContentProcessorTest {
 
 	private WatchedFolderContentProcessor underTest = new WatchedFolderContentProcessor(()->"http://localhost:8088/getDocument");

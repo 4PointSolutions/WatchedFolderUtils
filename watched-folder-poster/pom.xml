@@ -289,6 +289,7 @@ Bundle-DocURL:
 					<version>${maven-surefire-plugin.version}</version>
 					<configuration>
 						<useSystemClassLoader>false</useSystemClassLoader>
+						<excludedGroups>requiresWireMockRunning</excludedGroups>
 					</configuration>
 				</plugin>
 				<!-- Maven Failsafe Plugin -->
