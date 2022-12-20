@@ -31,14 +31,16 @@ import com.adobe.aemfd.watchfolder.service.api.ContentProcessor;
 import com.adobe.aemfd.watchfolder.service.api.ProcessorContext;
 
 @Component(service = ContentProcessor.class,
-		   property = {Constants.SERVICE_DESCRIPTION + "=4Point Watched Folder Processor", "serviceSelector=4PointWatchedFolderProcessor"},
+		   property = {
+				   Constants.SERVICE_DESCRIPTION + "=4Point Watched Folder REST Poster",
+				   Constants.SERVICE_PID + "=com._4point.aem.watchedfolder.core.WatchedFolderRestPoster"
+				   },
 		   immediate = true
 		   )
-public class WatchedFolderContentProcessor implements ContentProcessor {
-	private static final Logger log = LoggerFactory.getLogger(WatchedFolderContentProcessor.class);
+public class WatchedFolderRestPoster implements ContentProcessor {
+	private static final Logger log = LoggerFactory.getLogger(WatchedFolderRestPoster.class);
 	
-	public WatchedFolderContentProcessor() {
-		
+	public WatchedFolderRestPoster() {
 	}
 
 	/**
@@ -48,7 +50,7 @@ public class WatchedFolderContentProcessor implements ContentProcessor {
 	public void processInputs(ProcessorContext context) throws Exception {	
 		Entry<String, byte[]> result = processInputs(context.getInputMap()
 															.entrySet().stream()
-																	   .map(WatchedFolderContentProcessor::removeDocumentWrapper),
+																	   .map(WatchedFolderRestPoster::removeDocumentWrapper),
 													 new ConfigurationParameters(context.getConfigParameters())
 					  								 );
 		context.setResult(result.getKey(), new Document(result.getValue()));

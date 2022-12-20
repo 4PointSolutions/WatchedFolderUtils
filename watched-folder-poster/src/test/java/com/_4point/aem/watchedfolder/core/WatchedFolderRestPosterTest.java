@@ -17,12 +17,12 @@ import java.util.Map.Entry;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import com._4point.aem.watchedfolder.core.WatchedFolderContentProcessor.ConfigurationParameters;
+import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.ConfigurationParameters;
 
 @Tag("requiresWireMockRunning")
-class WatchedFolderContentProcessorTest {
+class WatchedFolderRestPosterTest {
 
-	private WatchedFolderContentProcessor underTest = new WatchedFolderContentProcessor();
+	private WatchedFolderRestPoster underTest = new WatchedFolderRestPoster();
 
 	@Test
 	void testProcessInputs_HappyPath() throws Exception {
