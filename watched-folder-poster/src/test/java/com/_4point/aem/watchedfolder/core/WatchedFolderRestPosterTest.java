@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.ConfigurationParameters;
+import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.WatchedFolderRestPosterException;
 
 @Tag("requiresWireMockRunning")
 class WatchedFolderRestPosterTest {
@@ -32,7 +33,7 @@ class WatchedFolderRestPosterTest {
 				);
 		Entry<String, byte[]> result = underTest.processInputs(inputs.stream(), createMockConfig());
 		
-		assertEquals("result", result.getKey());
+		assertEquals("Output_%F_%Y%M%D_%h%m%s_%R.txt", result.getKey());
 		assertTrue(result.getValue().length > 70000);	// TODO: Need to develop a better test, this is just a placeholder.
 	}
 
@@ -42,10 +43,10 @@ class WatchedFolderRestPosterTest {
 				new AbstractMap.SimpleEntry<>("BadRequestException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
 				);
 
-		Entry<String, byte[]> result = underTest.processInputs(inputs.stream(), createMockConfig());
-		
-		assertEquals("error", result.getKey());
-		assertThat(new String(result.getValue(), StandardCharsets.UTF_8), containsString("BadRequest"));
+		WatchedFolderRestPosterException ex = assertThrows(WatchedFolderRestPosterException.class, ()->underTest.processInputs(inputs.stream(), createMockConfig()));
+		String msg = ex.getMessage();
+		assertNotNull(msg);
+		assertThat(msg, containsString("BadRequest"));
 	}
 
 	@Test
@@ -54,10 +55,10 @@ class WatchedFolderRestPosterTest {
 				new AbstractMap.SimpleEntry<>("InternalErrorException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
 				);
 
-		Entry<String, byte[]> result = underTest.processInputs(inputs.stream(), createMockConfig());
-		
-		assertEquals("error", result.getKey());
-		assertThat(new String(result.getValue(), StandardCharsets.UTF_8), containsString("Internal Server Error"));
+		WatchedFolderRestPosterException ex = assertThrows(WatchedFolderRestPosterException.class, ()->underTest.processInputs(inputs.stream(), createMockConfig()));
+		String msg = ex.getMessage();
+		assertNotNull(msg);
+		assertThat(msg, containsString("Internal Server Error"));
 	}
 
 	private static ConfigurationParameters createMockConfig() {

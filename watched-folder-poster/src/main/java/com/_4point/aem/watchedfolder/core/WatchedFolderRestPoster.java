@@ -3,6 +3,7 @@ package com._4point.aem.watchedfolder.core;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -95,7 +97,13 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 
 			StatusLine statusLine = httpResponse.getStatusLine();
 			entity.writeTo(bas);
-			return new AbstractMap.SimpleEntry<>(isStatusOk(statusLine.getStatusCode()) ? "result" : "error", bas.toByteArray());
+			byte[] responseBytes = bas.toByteArray();
+			
+			if (isErrorStatus(statusLine.getStatusCode())) {
+				throw new WatchedFolderRestPosterException(new String(responseBytes, StandardCharsets.UTF_8), new HttpResponseException(statusLine.getStatusCode(), statusLine.getReasonPhrase()));
+			}
+			
+			return new AbstractMap.SimpleEntry<>("result", responseBytes);
 		} catch (IOException e) {
 			throw new IllegalStateException("Error occurred during POST to '" + configParams.endpoint() + "'.", e);
 		}
@@ -116,8 +124,8 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 		return builder.build();
 	}
 	
-	private static boolean isStatusOk(int statusCode) {
-		return statusCode < 200 || statusCode > 299 ? false : true;
+	private static boolean isErrorStatus(int statusCode) {
+		return statusCode < 200 || statusCode > 299;
 	}
 	
 	
@@ -156,6 +164,26 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 			} else {
 				throw new IllegalStateException("'" + key + "' config parameter is not a String. (" + value_obj.getClass().getName() + ")");
 			}
+		}
+	}
+	
+	@SuppressWarnings("serial")
+	public static class WatchedFolderRestPosterException extends RuntimeException {
+
+		public WatchedFolderRestPosterException() {
+			super();
+		}
+
+		public WatchedFolderRestPosterException(String message, Throwable cause) {
+			super(message, cause);
+		}
+
+		public WatchedFolderRestPosterException(String message) {
+			super(message);
+		}
+
+		public WatchedFolderRestPosterException(Throwable cause) {
+			super(cause);
 		}
 	}
 }
