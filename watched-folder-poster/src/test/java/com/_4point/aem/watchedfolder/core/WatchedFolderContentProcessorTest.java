@@ -9,16 +9,20 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import com._4point.aem.watchedfolder.core.WatchedFolderContentProcessor.ConfigurationParameters;
+
 @Tag("requiresWireMockRunning")
 class WatchedFolderContentProcessorTest {
 
-	private WatchedFolderContentProcessor underTest = new WatchedFolderContentProcessor(()->"http://localhost:8088/getDocument");
+	private WatchedFolderContentProcessor underTest = new WatchedFolderContentProcessor();
 
 	@Test
 	void testProcessInputs_HappyPath() throws Exception {
@@ -26,8 +30,7 @@ class WatchedFolderContentProcessorTest {
 				new AbstractMap.SimpleEntry<>("test1", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8))),
 				new AbstractMap.SimpleEntry<>("test2", new ByteArrayInputStream("SomeText2".getBytes(StandardCharsets.UTF_8)))
 				);
-
-		Entry<String, byte[]> result = underTest.processInputs(inputs.stream());
+		Entry<String, byte[]> result = underTest.processInputs(inputs.stream(), createMockConfig());
 		
 		assertEquals("result", result.getKey());
 		assertTrue(result.getValue().length > 70000);	// TODO: Need to develop a better test, this is just a placeholder.
@@ -39,7 +42,7 @@ class WatchedFolderContentProcessorTest {
 				new AbstractMap.SimpleEntry<>("BadRequestException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
 				);
 
-		Entry<String, byte[]> result = underTest.processInputs(inputs.stream());
+		Entry<String, byte[]> result = underTest.processInputs(inputs.stream(), createMockConfig());
 		
 		assertEquals("error", result.getKey());
 		assertThat(new String(result.getValue(), StandardCharsets.UTF_8), containsString("BadRequest"));
@@ -51,10 +54,16 @@ class WatchedFolderContentProcessorTest {
 				new AbstractMap.SimpleEntry<>("InternalErrorException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
 				);
 
-		Entry<String, byte[]> result = underTest.processInputs(inputs.stream());
+		Entry<String, byte[]> result = underTest.processInputs(inputs.stream(), createMockConfig());
 		
 		assertEquals("error", result.getKey());
 		assertThat(new String(result.getValue(), StandardCharsets.UTF_8), containsString("Internal Server Error"));
+	}
+
+	private static ConfigurationParameters createMockConfig() {
+		Map<String, Object> configValues = Collections.singletonMap("endpoint", "http://localhost:8088/getDocument");
+		ConfigurationParameters mockConfigParams = new ConfigurationParameters(configValues );
+		return mockConfigParams;
 	}
 
 }

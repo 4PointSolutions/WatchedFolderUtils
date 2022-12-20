@@ -1,19 +1,12 @@
 package com._4point.aem.watchedfolder.core;
 
-import org.osgi.service.component.annotations.Component;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,9 +21,10 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
+import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.adobe.aemfd.docmanager.Document;
 import com.adobe.aemfd.watchfolder.service.api.ContentProcessor;
@@ -41,23 +35,21 @@ import com.adobe.aemfd.watchfolder.service.api.ProcessorContext;
 		   immediate = true
 		   )
 public class WatchedFolderContentProcessor implements ContentProcessor {
+	private static final Logger log = LoggerFactory.getLogger(WatchedFolderContentProcessor.class);
 	
-	
-	private final Supplier<String> endpointLocation;
-
-	public WatchedFolderContentProcessor(Supplier<String> endpointLocation) {
-		this.endpointLocation = endpointLocation;
+	public WatchedFolderContentProcessor() {
+		
 	}
 
 	/**
 	 *	Called by AEM's Watched Folder mechanism.
 	 */
 	@Override
-	public void processInputs(ProcessorContext context) throws Exception {
-		
+	public void processInputs(ProcessorContext context) throws Exception {	
 		Entry<String, byte[]> result = processInputs(context.getInputMap()
 															.entrySet().stream()
-																	   .map(WatchedFolderContentProcessor::removeDocumentWrapper)
+																	   .map(WatchedFolderContentProcessor::removeDocumentWrapper),
+													 new ConfigurationParameters(context.getConfigParameters())
 					  								 );
 		context.setResult(result.getKey(), new Document(result.getValue()));
 	}
@@ -83,9 +75,9 @@ public class WatchedFolderContentProcessor implements ContentProcessor {
 	 * @param inputs
 	 * @return
 	 */
-	public Entry<String, byte[]> processInputs(Stream<Entry<String, InputStream>> inputs) {
+	public Entry<String, byte[]> processInputs(Stream<Entry<String, InputStream>> inputs, ConfigurationParameters configParams) {
 
-		HttpUriRequest multipartRequest = buildRequest(inputs, endpointLocation.get());
+		HttpUriRequest multipartRequest = buildRequest(inputs, configParams.endpoint());
 
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
 			HttpResponse httpResponse = httpclient.execute(multipartRequest);
@@ -103,7 +95,7 @@ public class WatchedFolderContentProcessor implements ContentProcessor {
 			entity.writeTo(bas);
 			return new AbstractMap.SimpleEntry<>(isStatusOk(statusLine.getStatusCode()) ? "result" : "error", bas.toByteArray());
 		} catch (IOException e) {
-			throw new IllegalStateException("Error occurred during POST to '" + endpointLocation + "'.", e);
+			throw new IllegalStateException("Error occurred during POST to '" + configParams.endpoint() + "'.", e);
 		}
 
 	}
@@ -124,6 +116,45 @@ public class WatchedFolderContentProcessor implements ContentProcessor {
 	
 	private static boolean isStatusOk(int statusCode) {
 		return statusCode < 200 || statusCode > 299 ? false : true;
+	}
+	
+	
+	public static class ConfigurationParameters {
+		private static final String ENDPOINT_PARAM_NAME = "endpoint";
+		
+		private final Map<String, Object> configParameters;
+		private final String endpoint;
+
+		public ConfigurationParameters(Map<String, Object> configParameters) {
+			this.configParameters = configParameters;
+			this.endpoint = getString(ENDPOINT_PARAM_NAME);
+		}
+
+		public ConfigurationParameters logValues() {
+			for (Entry<String, Object> entry : configParameters.entrySet()) {
+				Object obj_value = entry.getValue();
+				if (obj_value instanceof String) {
+					String str_value = (String) obj_value;
+					log.debug("Found Parameter - '" + entry.getKey() + "'/'" + str_value + "'.");
+				} else {
+					log.debug("Found Parameter - '" + entry.getKey() + "'/<object>.");
+				}
+			}
+			return this;
+		}
+		
+		public String endpoint() {
+			return endpoint;
+		}
+		
+		private String getString(String key) {
+			Object value_obj = configParameters.get(key);
+			if (value_obj instanceof String) {
+				return (String) value_obj;
+			} else {
+				throw new IllegalStateException("'" + key + "' config parameter is not a String. (" + value_obj.getClass().getName() + ")");
+			}
+		}
 	}
 }
 
