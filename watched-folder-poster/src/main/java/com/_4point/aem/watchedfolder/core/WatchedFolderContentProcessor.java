@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,6 +21,7 @@ import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -41,9 +43,9 @@ import com.adobe.aemfd.watchfolder.service.api.ProcessorContext;
 public class WatchedFolderContentProcessor implements ContentProcessor {
 	
 	
-	private final String endpointLocation;
+	private final Supplier<String> endpointLocation;
 
-	public WatchedFolderContentProcessor(String endpointLocation) {
+	public WatchedFolderContentProcessor(Supplier<String> endpointLocation) {
 		this.endpointLocation = endpointLocation;
 	}
 
@@ -83,7 +85,7 @@ public class WatchedFolderContentProcessor implements ContentProcessor {
 	 */
 	public Entry<String, byte[]> processInputs(Stream<Entry<String, InputStream>> inputs) {
 
-		HttpUriRequest multipartRequest = buildRequest(inputs, endpointLocation);
+		HttpUriRequest multipartRequest = buildRequest(inputs, endpointLocation.get());
 
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
 			HttpResponse httpResponse = httpclient.execute(multipartRequest);
@@ -92,10 +94,14 @@ public class WatchedFolderContentProcessor implements ContentProcessor {
 			HttpEntity entity = httpResponse.getEntity();
 			Header contentType = entity.getContentType();
 			HeaderElement[] contentTypeElements = contentType.getElements();
-			entity.writeTo(bas);
+			if (contentTypeElements.length != 1) {
+				// TODO: Do something here
+			}
+			String contentTypeValue = contentTypeElements[0].getName();
 
-			// TODO: Convert response to return value
-			return new AbstractMap.SimpleEntry<>("dummy", bas.toByteArray());
+			StatusLine statusLine = httpResponse.getStatusLine();
+			entity.writeTo(bas);
+			return new AbstractMap.SimpleEntry<>(isStatusOk(statusLine.getStatusCode()) ? "result" : "error", bas.toByteArray());
 		} catch (IOException e) {
 			throw new IllegalStateException("Error occurred during POST to '" + endpointLocation + "'.", e);
 		}
@@ -114,6 +120,10 @@ public class WatchedFolderContentProcessor implements ContentProcessor {
 			builder = builder.addPart(entry.getKey(), new InputStreamBody(entry.getValue(), entry.getKey()));
 		}
 		return builder.build();
+	}
+	
+	private static boolean isStatusOk(int statusCode) {
+		return statusCode < 200 || statusCode > 299 ? false : true;
 	}
 }
 
