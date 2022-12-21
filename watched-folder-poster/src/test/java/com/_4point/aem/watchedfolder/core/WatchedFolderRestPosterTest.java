@@ -34,6 +34,7 @@ import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.WatchedFolderR
  */
 @Tag("requiresWireMockRunning")
 class WatchedFolderRestPosterTest {
+	private static final String MOCK_WATCHED_FOLDER_ID = "WatchedFolderId1";
 
 	private WatchedFolderRestPoster underTest = new WatchedFolderRestPoster();
 
@@ -43,7 +44,7 @@ class WatchedFolderRestPosterTest {
 				new AbstractMap.SimpleEntry<>("test1", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8))),
 				new AbstractMap.SimpleEntry<>("test2", new ByteArrayInputStream("SomeText2".getBytes(StandardCharsets.UTF_8)))
 				);
-		Result result = underTest.processInputs(inputs.stream(), createMockConfig());
+		Result result = underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID);
 		
 		assertAll(
 				()->assertEquals("result", result.filename()),
@@ -57,7 +58,7 @@ class WatchedFolderRestPosterTest {
 		List<Entry<String, InputStream>> inputs = Arrays.asList(
 				new AbstractMap.SimpleEntry<>("filename_test", new ByteArrayInputStream("Filename Text".getBytes(StandardCharsets.UTF_8)))
 				);
-		Result result = underTest.processInputs(inputs.stream(), createMockConfig());
+		Result result = underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID);
 		
 		assertAll(
 				()->assertEquals("result_filename.txt", result.filename()),
@@ -72,7 +73,7 @@ class WatchedFolderRestPosterTest {
 				new AbstractMap.SimpleEntry<>("BadRequestException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
 				);
 
-		WatchedFolderRestPosterException ex = assertThrows(WatchedFolderRestPosterException.class, ()->underTest.processInputs(inputs.stream(), createMockConfig()));
+		WatchedFolderRestPosterException ex = assertThrows(WatchedFolderRestPosterException.class, ()->underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID));
 		String msg = ex.getMessage();
 		assertNotNull(msg);
 		assertThat(msg, containsString("BadRequest"));
@@ -84,7 +85,7 @@ class WatchedFolderRestPosterTest {
 				new AbstractMap.SimpleEntry<>("InternalErrorException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
 				);
 
-		WatchedFolderRestPosterException ex = assertThrows(WatchedFolderRestPosterException.class, ()->underTest.processInputs(inputs.stream(), createMockConfig()));
+		WatchedFolderRestPosterException ex = assertThrows(WatchedFolderRestPosterException.class, ()->underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID));
 		String msg = ex.getMessage();
 		assertNotNull(msg);
 		assertThat(msg, containsString("Internal Server Error"));

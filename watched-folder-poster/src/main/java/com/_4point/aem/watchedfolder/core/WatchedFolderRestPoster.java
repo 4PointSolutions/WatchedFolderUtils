@@ -1,6 +1,5 @@
 package com._4point.aem.watchedfolder.core;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -51,11 +50,12 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	 *	Called by AEM's Watched Folder mechanism.
 	 */
 	@Override
-	public void processInputs(ProcessorContext context) throws Exception {	
+	public void processInputs(ProcessorContext context) throws Exception {
 		Result result = processInputs(context.getInputMap()
 											 .entrySet().stream()
 											 			.map(WatchedFolderRestPoster::removeDocumentWrapper),
-									  new ConfigurationParameters(context.getConfigParameters())
+									  new ConfigurationParameters(context.getConfigParameters()),
+									  context.getWatchFolderId()
 					  				  );
 		context.setResult(result.filename, result.toDocument());
 	}
@@ -81,7 +81,8 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	 * @param inputs
 	 * @return
 	 */
-	/* package */ Result processInputs(Stream<Entry<String, InputStream>> inputs, ConfigurationParameters configParams) {
+	/* package */ Result processInputs(Stream<Entry<String, InputStream>> inputs, ConfigurationParameters configParams, String watchedFolderId) {
+		configParams.logValues();
 
 		HttpUriRequest multipartRequest = buildRequest(inputs, configParams.endpoint());
 
