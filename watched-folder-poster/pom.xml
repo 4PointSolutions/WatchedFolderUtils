@@ -57,6 +57,14 @@
 		<wiremock.version>2.35.0</wiremock.version>
 	</properties>
 
+	<distributionManagement>
+		<repository>
+			<id>github</id>
+			<name>GitHub 4PointSolutions Apache Maven Packages</name>
+			<url>https://maven.pkg.github.com/4PointSolutions/WatchedFolderUtils</url>
+		</repository>
+	</distributionManagement>
+
 	<build>
 		<plugins>
 			<!-- Maven Release Plugin -->
