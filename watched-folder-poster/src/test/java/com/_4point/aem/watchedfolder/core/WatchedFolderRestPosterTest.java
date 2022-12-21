@@ -91,6 +91,30 @@ class WatchedFolderRestPosterTest {
 		assertThat(msg, containsString("Internal Server Error"));
 	}
 
+	@Test
+	void testProcessInputs_MissingEndpoint() throws Exception {
+		List<Entry<String, InputStream>> inputs = Arrays.asList(
+				new AbstractMap.SimpleEntry<>("InternalErrorException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
+				);
+
+		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, ()->underTest.processInputs(inputs.stream(), new ConfigurationParameters(Collections.emptyMap()), MOCK_WATCHED_FOLDER_ID));
+		String msg = ex.getMessage();
+		assertNotNull(msg);
+		assertThat(msg, containsString("endpoint configuration parameter was not configured"));
+	}
+
+	@Test
+	void testProcessInputs_BadEndpointObj() throws Exception {
+		List<Entry<String, InputStream>> inputs = Arrays.asList(
+				new AbstractMap.SimpleEntry<>("InternalErrorException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
+				);
+
+		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, ()->underTest.processInputs(inputs.stream(), new ConfigurationParameters(Collections.singletonMap("endpoint", Collections.emptyList())), MOCK_WATCHED_FOLDER_ID));
+		String msg = ex.getMessage();
+		assertNotNull(msg);
+		assertThat(msg, containsString("'endpoint' config parameter is not a String. (java.util.Collections$EmptyList)"));
+	}
+
 	private static ConfigurationParameters createMockConfig() {
 		Map<String, Object> configValues = Collections.singletonMap("endpoint", "http://localhost:8088/getDocument");
 		ConfigurationParameters mockConfigParams = new ConfigurationParameters(configValues );

@@ -170,7 +170,7 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 
 		public ConfigurationParameters(Map<String, Object> configParameters) {
 			this.configParameters = configParameters;
-			this.endpoint = getString(ENDPOINT_PARAM_NAME);
+			this.endpoint = getString(ENDPOINT_PARAM_NAME).orElseThrow(()->new IllegalArgumentException(ENDPOINT_PARAM_NAME + " configuration parameter was not configured."));
 		}
 
 		public ConfigurationParameters logValues() {
@@ -190,12 +190,14 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 			return endpoint;
 		}
 		
-		private String getString(String key) {
+		private Optional<String> getString(String key) {
 			Object value_obj = configParameters.get(key);
-			if (value_obj instanceof String) {
-				return (String) value_obj;
+			if (value_obj == null) {
+				return Optional.empty();
+			} else if (value_obj instanceof String) {
+				return Optional.of((String)value_obj);
 			} else {
-				throw new IllegalStateException("'" + key + "' config parameter is not a String. (" + value_obj.getClass().getName() + ")");
+				throw new IllegalArgumentException("'" + key + "' config parameter is not a String. (" + value_obj.getClass().getName() + ")");
 			}
 		}
 	}
