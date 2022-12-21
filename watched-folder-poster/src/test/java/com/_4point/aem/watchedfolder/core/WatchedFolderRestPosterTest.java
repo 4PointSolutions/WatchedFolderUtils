@@ -20,6 +20,17 @@ import org.junit.jupiter.api.Test;
 import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.ConfigurationParameters;
 import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.WatchedFolderRestPosterException;
 
+/**
+ * These tests require that wiremock be running in order for them to pass.  To start wiremock, run the wiremock JBang script
+ * in the JBang directory of this project's repository.
+ * 
+ * The reason wiremock has to be run separately is because of a ridiculously old version of Google quava use within the AEM
+ * dependencies.  It conflicts with the more recent version used by wiremock, so wiremock has to be run within it's own
+ * class path.
+ * 
+ * These tests are normally disabled during the maven build since wiremock isn't guaranteed to be running. 
+ *
+ */
 @Tag("requiresWireMockRunning")
 class WatchedFolderRestPosterTest {
 
