@@ -28,6 +28,7 @@ import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com._4point.aem.watchedfolder.core.ProcessingMetadata.ProcessingMetadataBuilder;
 import com._4point.aem.watchedfolder.support.Jdk8Utils;
 import com.adobe.aemfd.docmanager.Document;
 import com.adobe.aemfd.watchfolder.service.api.ContentProcessor;
@@ -82,9 +83,12 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	 * @return
 	 */
 	/* package */ Result processInputs(Stream<Entry<String, InputStream>> inputs, ConfigurationParameters configParams, String watchedFolderId) {
+		String correlationId = CorrelationId.generate();
+		log.info("Processing watched folder transaction '" + correlationId + "' from watched folder id '" + watchedFolderId + "'.");
+		ProcessingMetadataBuilder metadataBuilder = ProcessingMetadata.start(correlationId);
 		configParams.logValues();
 
-		HttpUriRequest multipartRequest = buildRequest(inputs, configParams.endpoint());
+		HttpUriRequest multipartRequest = buildRequest(inputs, configParams.endpoint(), correlationId);
 
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
 			HttpResponse httpResponse = httpclient.execute(multipartRequest);
@@ -106,6 +110,8 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 					.map(ContentTypeHeader::getFullValue)
 					.orElse("application/octet-stream");
 			
+			ProcessingMetadata processingMetadata = metadataBuilder.finish();
+			log.info("Completed transaction '" + processingMetadata.getCorrelationId() + "' in " + processingMetadata.getFormattedElapsedTime() + ".");
 			return new Result(responseBytes, contentType, filename);
 		} catch (IOException e) {
 			throw new IllegalStateException("Error occurred during POST to '" + configParams.endpoint() + "'.", e);
@@ -113,9 +119,10 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 
 	}
 
-	private static HttpUriRequest buildRequest(Stream<Entry<String, InputStream>> inputs, String endpointLocation) {
+	private static HttpUriRequest buildRequest(Stream<Entry<String, InputStream>> inputs, String endpointLocation, String correlationId) {
 		RequestBuilder reqbuilder = RequestBuilder.post(endpointLocation);
 		reqbuilder.setEntity(toMultipartEntiry(inputs.collect(Collectors.toList())));
+		reqbuilder.addHeader(CorrelationId.CORRELATION_ID_HDR, correlationId);
 		return reqbuilder.build();
 	}
 
