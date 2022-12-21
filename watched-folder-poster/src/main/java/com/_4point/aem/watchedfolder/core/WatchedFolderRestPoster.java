@@ -8,6 +8,7 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,6 +29,7 @@ import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com._4point.aem.watchedfolder.support.Jdk8Utils;
 import com.adobe.aemfd.docmanager.Document;
 import com.adobe.aemfd.watchfolder.service.api.ContentProcessor;
 import com.adobe.aemfd.watchfolder.service.api.ProcessorContext;
@@ -50,17 +52,17 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	 */
 	@Override
 	public void processInputs(ProcessorContext context) throws Exception {	
-		Entry<String, byte[]> result = processInputs(context.getInputMap()
-															.entrySet().stream()
-																	   .map(WatchedFolderRestPoster::removeDocumentWrapper),
-													 new ConfigurationParameters(context.getConfigParameters())
-					  								 );
-		context.setResult(result.getKey(), new Document(result.getValue()));
+		Result result = processInputs(context.getInputMap()
+											 .entrySet().stream()
+											 			.map(WatchedFolderRestPoster::removeDocumentWrapper),
+									  new ConfigurationParameters(context.getConfigParameters())
+					  				  );
+		context.setResult(result.filename, result.toDocument());
 	}
 
 	/**
 	 *  This method removes Adobe's Document objects because they are hard to mock and cannot therefore be used in unit
-	 *  testing.  I wish they had made the Document object and interace instead, but c'est la guerre.
+	 *  testing.  I wish they had made the Document object an interface instead, but c'est la guerre.
 	 * 
 	 * @param entry
 	 * @return
@@ -74,36 +76,36 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	}
 	
 	/**
-	 * This method does all the work
+	 * This method does all the work.  It is called directly by the unit tests.
 	 * 
 	 * @param inputs
 	 * @return
 	 */
-	public Entry<String, byte[]> processInputs(Stream<Entry<String, InputStream>> inputs, ConfigurationParameters configParams) {
+	/* package */ Result processInputs(Stream<Entry<String, InputStream>> inputs, ConfigurationParameters configParams) {
 
 		HttpUriRequest multipartRequest = buildRequest(inputs, configParams.endpoint());
 
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
 			HttpResponse httpResponse = httpclient.execute(multipartRequest);
 			
-			ByteArrayOutputStream bas = new ByteArrayOutputStream();
-			HttpEntity entity = httpResponse.getEntity();
-			Header contentType = entity.getContentType();
-			HeaderElement[] contentTypeElements = contentType.getElements();
-			if (contentTypeElements.length != 1) {
-				// TODO: Do something here
-			}
-			String contentTypeValue = contentTypeElements[0].getName();
+			byte[] responseBytes = Jdk8Utils.readAllBytes(httpResponse.getEntity().getContent());
 
 			StatusLine statusLine = httpResponse.getStatusLine();
-			entity.writeTo(bas);
-			byte[] responseBytes = bas.toByteArray();
-			
 			if (isErrorStatus(statusLine.getStatusCode())) {
 				throw new WatchedFolderRestPosterException(new String(responseBytes, StandardCharsets.UTF_8), new HttpResponseException(statusLine.getStatusCode(), statusLine.getReasonPhrase()));
 			}
+
+			// Get the filename from the Content-Disposition header or use "result" if it's not there.
+			String filename = ContentDispositionHeader.from(httpResponse)
+					.map(ContentDispositionHeader::filename)
+					.orElse("result");
+
+			// Get content type from the Content-Type header
+			String contentType = ContentTypeHeader.from(httpResponse)
+					.map(ContentTypeHeader::getFullValue)
+					.orElse("application/octet-stream");
 			
-			return new AbstractMap.SimpleEntry<>("result", responseBytes);
+			return new Result(responseBytes, contentType, filename);
 		} catch (IOException e) {
 			throw new IllegalStateException("Error occurred during POST to '" + configParams.endpoint() + "'.", e);
 		}
@@ -128,6 +130,36 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 		return statusCode < 200 || statusCode > 299;
 	}
 	
+	public static class Result {
+		private final byte[] bytes;
+		private final String contentType;
+		private final String filename;
+
+		public Result(byte[] bytes, String contentType, String filename) {
+			this.bytes = bytes;
+			this.contentType = contentType;
+			this.filename = filename;
+		}
+
+		public byte[] bytes() {
+			return bytes;
+		}
+
+		public String contentType() {
+			return contentType;
+		}
+
+		public String filename() {
+			return filename;
+		}
+		
+		public Document toDocument() {
+			Document doc = new Document(bytes());
+			doc.setContentType(contentType);
+			doc.setAttribute("filename", filename);
+			return doc;
+		}
+	}
 	
 	public static class ConfigurationParameters {
 		private static final String ENDPOINT_PARAM_NAME = "endpoint";
@@ -164,6 +196,50 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 			} else {
 				throw new IllegalStateException("'" + key + "' config parameter is not a String. (" + value_obj.getClass().getName() + ")");
 			}
+		}
+	}
+	
+	private static abstract class HttpHeader {
+		private final HeaderElement headerElement;
+		private final String headerValue;
+
+		public HttpHeader(Header header) {
+			this.headerElement = header.getElements()[0];
+			this.headerValue = header.getValue();
+			
+		}
+		
+		public String getValue() { return headerElement.getName(); }
+		protected String getParameter(String name) { return headerElement.getParameterByName(name).getValue(); }
+		public String getFullValue() { return headerValue; }
+ 	}
+	
+	private static class ContentDispositionHeader extends HttpHeader {
+		private static final String CONTENT_DISPOSITION_HEADER_NAME = "Content-Disposition";
+		private static final String FILENAME_PARAMETER_NAME = "filename";
+
+		private ContentDispositionHeader(Header header) {
+			super(header);
+		}
+
+		public String filename() { return getParameter(FILENAME_PARAMETER_NAME); }
+
+		public static Optional<ContentDispositionHeader> from(HttpResponse response) {
+			return Optional.ofNullable(response.getFirstHeader(CONTENT_DISPOSITION_HEADER_NAME))
+						   .map(ContentDispositionHeader::new);
+		}
+	}
+	
+	private static class ContentTypeHeader extends HttpHeader {
+		private static final String CONTENT_TYPE_HEADER_NAME = "Content-Type";
+
+		public ContentTypeHeader(Header header) {
+			super(header);
+		}
+		
+		public static Optional<ContentTypeHeader> from(HttpResponse response) {
+			return Optional.ofNullable(response.getFirstHeader(CONTENT_TYPE_HEADER_NAME))
+					   .map(ContentTypeHeader::new);
 		}
 	}
 	

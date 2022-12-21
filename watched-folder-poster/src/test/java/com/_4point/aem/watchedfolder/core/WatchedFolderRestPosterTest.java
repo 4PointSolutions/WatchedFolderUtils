@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.ConfigurationParameters;
+import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.Result;
 import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.WatchedFolderRestPosterException;
 
 /**
@@ -42,10 +43,27 @@ class WatchedFolderRestPosterTest {
 				new AbstractMap.SimpleEntry<>("test1", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8))),
 				new AbstractMap.SimpleEntry<>("test2", new ByteArrayInputStream("SomeText2".getBytes(StandardCharsets.UTF_8)))
 				);
-		Entry<String, byte[]> result = underTest.processInputs(inputs.stream(), createMockConfig());
+		Result result = underTest.processInputs(inputs.stream(), createMockConfig());
 		
-		assertEquals("Output_%F_%Y%M%D_%h%m%s_%R.txt", result.getKey());
-		assertTrue(result.getValue().length > 70000);	// TODO: Need to develop a better test, this is just a placeholder.
+		assertAll(
+				()->assertEquals("result", result.filename()),
+				()->assertEquals("multipart/form-data; boundary=Boundary_33_2015684127_1590785034918", result.contentType()),
+				()->assertTrue(result.bytes().length > 70000)	// TODO: Need to develop a better test, this is just a placeholder.
+				);
+	}
+
+	@Test
+	void testProcessInputs_HappyPath_wFilename() throws Exception {
+		List<Entry<String, InputStream>> inputs = Arrays.asList(
+				new AbstractMap.SimpleEntry<>("filename_test", new ByteArrayInputStream("Filename Text".getBytes(StandardCharsets.UTF_8)))
+				);
+		Result result = underTest.processInputs(inputs.stream(), createMockConfig());
+		
+		assertAll(
+				()->assertEquals("result_filename.txt", result.filename()),
+				()->assertEquals("text/plain; charset=utf-8", result.contentType()),
+				()->assertEquals("This is the result of the call.", new String(result.bytes(), StandardCharsets.UTF_8))
+				);
 	}
 
 	@Test
