@@ -133,7 +133,7 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	private static HttpEntity toMultipartEntiry(List<Entry<String, InputStream>> inputsList) {
 		MultipartEntityBuilder builder = MultipartEntityBuilder.create();
 		for (Entry<String, InputStream> entry : inputsList) {
-			builder = builder.addPart(entry.getKey(), new InputStreamBody(entry.getValue(), entry.getKey()));
+			builder = builder.addPart("datafiles", new InputStreamBody(entry.getValue(), entry.getKey()));
 		}
 		return builder.build();
 	}
