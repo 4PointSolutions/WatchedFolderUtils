@@ -2,6 +2,7 @@
 //DEPS info.picocli:picocli:4.6.3
 //DEPS com.github.tomakehurst:wiremock-jre8:2.35.0
 //DEPS org.slf4j:jul-to-slf4j:1.7.36
+//DEPS org.slf4j:slf4j-simple:1.7.36
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;

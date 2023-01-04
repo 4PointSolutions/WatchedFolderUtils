@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ class WatchedFolderRestPosterTest {
 				new AbstractMap.SimpleEntry<>("test1", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8))),
 				new AbstractMap.SimpleEntry<>("test2", new ByteArrayInputStream("SomeText2".getBytes(StandardCharsets.UTF_8)))
 				);
-		Result result = underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID);
+		Result result = underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID).get();
 		
 		assertAll(
 				()->assertEquals("result", result.filename()),
@@ -58,13 +59,22 @@ class WatchedFolderRestPosterTest {
 		List<Entry<String, InputStream>> inputs = Arrays.asList(
 				new AbstractMap.SimpleEntry<>("filename_test", new ByteArrayInputStream("Filename Text".getBytes(StandardCharsets.UTF_8)))
 				);
-		Result result = underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID);
+		Result result = underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID).get();
 		
 		assertAll(
 				()->assertEquals("result_filename.txt", result.filename()),
 				()->assertEquals("text/plain; charset=utf-8", result.contentType()),
 				()->assertEquals("This is the result of the call.", new String(result.bytes(), StandardCharsets.UTF_8))
 				);
+	}
+
+	@Test
+	void testProcessInputs_HappyPath_NoContent() throws Exception {
+		List<Entry<String, InputStream>> inputs = Arrays.asList(
+				new AbstractMap.SimpleEntry<>("no_content_test", new ByteArrayInputStream("Filename Text".getBytes(StandardCharsets.UTF_8)))
+				);
+		Optional<Result> result = underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID);
+		assertFalse(result.isPresent(), "Expect result to be empty when no content is returned.");
 	}
 
 	@Test

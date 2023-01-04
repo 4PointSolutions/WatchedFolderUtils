@@ -52,13 +52,13 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	 */
 	@Override
 	public void processInputs(ProcessorContext context) throws Exception {
-		Result result = processInputs(context.getInputMap()
+		Optional<Result> result = processInputs(context.getInputMap()
 											 .entrySet().stream()
 											 			.map(WatchedFolderRestPoster::removeDocumentWrapper),
 									  new ConfigurationParameters(context.getConfigParameters()),
 									  context.getWatchFolderId()
 					  				  );
-		context.setResult(result.filename, result.toDocument());
+		result.ifPresent(r->context.setResult(r.filename, r.toDocument()));	// If there was a result, set the content.
 	}
 
 	/**
@@ -82,7 +82,7 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	 * @param inputs
 	 * @return
 	 */
-	/* package */ Result processInputs(Stream<Entry<String, InputStream>> inputs, ConfigurationParameters configParams, String watchedFolderId) {
+	/* package */ Optional<Result> processInputs(Stream<Entry<String, InputStream>> inputs, ConfigurationParameters configParams, String watchedFolderId) {
 		String correlationId = CorrelationId.generate();
 		log.info("Processing watched folder transaction '" + correlationId + "' from watched folder id '" + watchedFolderId + "'.");
 		ProcessingMetadataBuilder metadataBuilder = ProcessingMetadata.start(correlationId);
@@ -92,10 +92,14 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
 			HttpResponse httpResponse = httpclient.execute(multipartRequest);
-			
+			StatusLine statusLine = httpResponse.getStatusLine();
+
+			if (statusLine.getStatusCode() == 204) {	// If there was not content (HTTP Status 204 means "No Content" 
+				return Optional.empty();
+			}
+
 			byte[] responseBytes = Jdk8Utils.readAllBytes(httpResponse.getEntity().getContent());
 
-			StatusLine statusLine = httpResponse.getStatusLine();
 			if (isErrorStatus(statusLine.getStatusCode())) {
 				throw new WatchedFolderRestPosterException(new String(responseBytes, StandardCharsets.UTF_8), new HttpResponseException(statusLine.getStatusCode(), statusLine.getReasonPhrase()));
 			}
@@ -112,7 +116,7 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 			
 			ProcessingMetadata processingMetadata = metadataBuilder.finish();
 			log.info("Completed transaction '" + processingMetadata.getCorrelationId() + "' in " + processingMetadata.getFormattedElapsedTime() + ".");
-			return new Result(responseBytes, contentType, filename);
+			return Optional.of(new Result(responseBytes, contentType, filename));
 		} catch (IOException e) {
 			throw new IllegalStateException("Error occurred during POST to '" + configParams.endpoint() + "'.", e);
 		}

@@ -1,0 +1,24 @@
+{
+  "id" : "a668a0ed-ccae-435d-a00a-d9f967d8bce1",
+  "name" : "getDocument_HappyPath_NoContent",
+  "request" : {
+    "url" : "/getDocument",
+    "method" : "POST",
+    "bodyPatterns" : [ {
+      "contains" : "no_content_test"
+    } ]
+  },
+  "response" : {
+    "status" : 204,
+    "headers" : {
+      "x-correlation-id" : "{{request.headers.x-correlation-id}}",
+      "MIME-Version" : "1.0",
+      "Content-Type" : "multipart/form-data; boundary=Boundary_33_2015684127_1590785034918",
+      "Date" : "Fri, 29 May 2020 20:43:54 GMT",
+      "Keep-Alive" : "timeout=60"
+    }
+  },
+  "uuid" : "a668a0ed-ccae-435d-a00a-d9f967d8bce1",
+  "persistent" : true,
+  "insertionIndex" : 5
+}
