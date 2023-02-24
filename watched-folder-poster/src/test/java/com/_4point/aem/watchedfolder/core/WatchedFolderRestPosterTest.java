@@ -5,20 +5,18 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.ConfigurationParameters;
+import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.InputsList;
 import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.Result;
 import com._4point.aem.watchedfolder.core.WatchedFolderRestPoster.WatchedFolderRestPosterException;
 
@@ -41,11 +39,11 @@ class WatchedFolderRestPosterTest {
 
 	@Test
 	void testProcessInputs_HappyPath() throws Exception {
-		List<Entry<String, InputStream>> inputs = Arrays.asList(
+		InputsList inputs = new InputsList(Arrays.asList(
 				new AbstractMap.SimpleEntry<>("test1", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8))),
 				new AbstractMap.SimpleEntry<>("test2", new ByteArrayInputStream("SomeText2".getBytes(StandardCharsets.UTF_8)))
-				);
-		Result result = underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID).get();
+				));
+		Result result = underTest.processInputs(inputs, createMockConfig(), MOCK_WATCHED_FOLDER_ID).get();
 		
 		assertAll(
 				()->assertEquals("result", result.filename()),
@@ -56,10 +54,10 @@ class WatchedFolderRestPosterTest {
 
 	@Test
 	void testProcessInputs_HappyPath_wFilename() throws Exception {
-		List<Entry<String, InputStream>> inputs = Arrays.asList(
+		InputsList inputs = new InputsList(Arrays.asList(
 				new AbstractMap.SimpleEntry<>("filename_test", new ByteArrayInputStream("Filename Text".getBytes(StandardCharsets.UTF_8)))
-				);
-		Result result = underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID).get();
+				));
+		Result result = underTest.processInputs(inputs, createMockConfig(), MOCK_WATCHED_FOLDER_ID).get();
 		
 		assertAll(
 				()->assertEquals("result_filename.txt", result.filename()),
@@ -70,20 +68,20 @@ class WatchedFolderRestPosterTest {
 
 	@Test
 	void testProcessInputs_HappyPath_NoContent() throws Exception {
-		List<Entry<String, InputStream>> inputs = Arrays.asList(
+		InputsList inputs = new InputsList(Arrays.asList(
 				new AbstractMap.SimpleEntry<>("no_content_test", new ByteArrayInputStream("Filename Text".getBytes(StandardCharsets.UTF_8)))
-				);
-		Optional<Result> result = underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID);
+				));
+		Optional<Result> result = underTest.processInputs(inputs, createMockConfig(), MOCK_WATCHED_FOLDER_ID);
 		assertFalse(result.isPresent(), "Expect result to be empty when no content is returned.");
 	}
 
 	@Test
 	void testProcessInputs_BadRequestException() throws Exception {
-		List<Entry<String, InputStream>> inputs = Arrays.asList(
+		InputsList inputs = new InputsList(Arrays.asList(
 				new AbstractMap.SimpleEntry<>("BadRequestException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
-				);
+				));
 
-		WatchedFolderRestPosterException ex = assertThrows(WatchedFolderRestPosterException.class, ()->underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID));
+		WatchedFolderRestPosterException ex = assertThrows(WatchedFolderRestPosterException.class, ()->underTest.processInputs(inputs, createMockConfig(), MOCK_WATCHED_FOLDER_ID));
 		String msg = ex.getMessage();
 		assertNotNull(msg);
 		assertThat(msg, containsString("BadRequest"));
@@ -91,11 +89,11 @@ class WatchedFolderRestPosterTest {
 
 	@Test
 	void testProcessInputs_InternalErrorException() throws Exception {
-		List<Entry<String, InputStream>> inputs = Arrays.asList(
+		InputsList inputs = new InputsList(Arrays.asList(
 				new AbstractMap.SimpleEntry<>("InternalErrorException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
-				);
+				));
 
-		WatchedFolderRestPosterException ex = assertThrows(WatchedFolderRestPosterException.class, ()->underTest.processInputs(inputs.stream(), createMockConfig(), MOCK_WATCHED_FOLDER_ID));
+		WatchedFolderRestPosterException ex = assertThrows(WatchedFolderRestPosterException.class, ()->underTest.processInputs(inputs, createMockConfig(), MOCK_WATCHED_FOLDER_ID));
 		String msg = ex.getMessage();
 		assertNotNull(msg);
 		assertThat(msg, containsString("Internal Server Error"));
@@ -103,11 +101,11 @@ class WatchedFolderRestPosterTest {
 
 	@Test
 	void testProcessInputs_MissingEndpoint() throws Exception {
-		List<Entry<String, InputStream>> inputs = Arrays.asList(
+		InputsList inputs = new InputsList(Arrays.asList(
 				new AbstractMap.SimpleEntry<>("InternalErrorException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
-				);
+				));
 
-		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, ()->underTest.processInputs(inputs.stream(), new ConfigurationParameters(Collections.emptyMap()), MOCK_WATCHED_FOLDER_ID));
+		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, ()->underTest.processInputs(inputs, new ConfigurationParameters(Collections.emptyMap()), MOCK_WATCHED_FOLDER_ID));
 		String msg = ex.getMessage();
 		assertNotNull(msg);
 		assertThat(msg, containsString("endpoint configuration parameter was not configured"));
@@ -115,11 +113,11 @@ class WatchedFolderRestPosterTest {
 
 	@Test
 	void testProcessInputs_BadEndpointObj() throws Exception {
-		List<Entry<String, InputStream>> inputs = Arrays.asList(
+		InputsList inputs = new InputsList(Arrays.asList(
 				new AbstractMap.SimpleEntry<>("InternalErrorException", new ByteArrayInputStream("SomeText1".getBytes(StandardCharsets.UTF_8)))
-				);
+				));
 
-		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, ()->underTest.processInputs(inputs.stream(), new ConfigurationParameters(Collections.singletonMap("endpoint", Collections.emptyList())), MOCK_WATCHED_FOLDER_ID));
+		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, ()->underTest.processInputs(inputs, new ConfigurationParameters(Collections.singletonMap("endpoint", Collections.emptyList())), MOCK_WATCHED_FOLDER_ID));
 		String msg = ex.getMessage();
 		assertNotNull(msg);
 		assertThat(msg, containsString("'endpoint' config parameter is not a String. (java.util.Collections$EmptyList)"));

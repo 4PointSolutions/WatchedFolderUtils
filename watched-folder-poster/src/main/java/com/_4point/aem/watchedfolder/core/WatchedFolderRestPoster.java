@@ -4,12 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
@@ -52,49 +53,34 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	 */
 	@Override
 	public void processInputs(ProcessorContext context) throws Exception {
-		Optional<Result> result = processInputs(context.getInputMap()
-											 .entrySet().stream()
-											 			.map(WatchedFolderRestPoster::removeDocumentWrapper),
-									  new ConfigurationParameters(context.getConfigParameters()),
-									  context.getWatchFolderId()
-					  				  );
-		result.ifPresent(r->context.setResult(r.filename, r.toDocument()));	// If there was a result, set the content.
-	}
-
-	/**
-	 *  This method removes Adobe's Document objects because they are hard to mock and cannot therefore be used in unit
-	 *  testing.  I wish they had made the Document object an interface instead, but c'est la guerre.
-	 * 
-	 * @param entry
-	 * @return
-	 */
-	private static Entry<String, InputStream> removeDocumentWrapper(Entry<String, Document> entry) {
-		try {
-			return new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue().getInputStream());
-		} catch (IOException ex) {
-			throw new IllegalStateException("Error while reading input document input stream.", ex);
+		try (InputsList inputs = new InputsList(context.getInputMap().entrySet())) {
+			Optional<Result> result = processInputs(inputs,
+										  			new ConfigurationParameters(context.getConfigParameters()),
+										  			context.getWatchFolderId()
+						  				  			);
+			result.ifPresent(r->context.setResult(r.filename, r.toDocument()));	// If there was a result, set the content.
 		}
 	}
-	
+
 	/**
 	 * This method does all the work.  It is called directly by the unit tests.
 	 * 
 	 * @param inputs
 	 * @return
 	 */
-	/* package */ Optional<Result> processInputs(Stream<Entry<String, InputStream>> inputs, ConfigurationParameters configParams, String watchedFolderId) {
+	/* package */ Optional<Result> processInputs(InputsList inputs, ConfigurationParameters configParams, String watchedFolderId) {
 		String correlationId = CorrelationId.generate();
 		log.info("Processing watched folder transaction '" + correlationId + "' from watched folder id '" + watchedFolderId + "'.");
 		ProcessingMetadataBuilder metadataBuilder = ProcessingMetadata.start(correlationId);
 		configParams.logValues();
 
-		HttpUriRequest multipartRequest = buildRequest(inputs, configParams.endpoint(), correlationId);
+		HttpUriRequest multipartRequest = inputs.buildRequest(configParams.endpoint(), correlationId);
 
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
 			HttpResponse httpResponse = httpclient.execute(multipartRequest);
 			StatusLine statusLine = httpResponse.getStatusLine();
 
-			if (statusLine.getStatusCode() == 204) {	// If there was not content (HTTP Status 204 means "No Content" 
+			if (statusLine.getStatusCode() == 204) {	// If there was no content (HTTP Status 204 means "No Content" 
 				return Optional.empty();
 			}
 
@@ -123,23 +109,75 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 
 	}
 
-	private static HttpUriRequest buildRequest(Stream<Entry<String, InputStream>> inputs, String endpointLocation, String correlationId) {
-		RequestBuilder reqbuilder = RequestBuilder.post(endpointLocation);
-		reqbuilder.setEntity(toMultipartEntiry(inputs.collect(Collectors.toList())));
-		reqbuilder.addHeader(CorrelationId.CORRELATION_ID_HDR, correlationId);
-		return reqbuilder.build();
-	}
-
-	private static HttpEntity toMultipartEntiry(List<Entry<String, InputStream>> inputsList) {
-		MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-		for (Entry<String, InputStream> entry : inputsList) {
-			builder = builder.addPart("datafiles", new InputStreamBody(entry.getValue(), entry.getKey()));
-		}
-		return builder.build();
-	}
-	
 	private static boolean isErrorStatus(int statusCode) {
 		return statusCode < 200 || statusCode > 299;
+	}
+	
+	/**
+	 * Class to deal with the incoming documents and convert them to an MultipartEntity that we can POST.
+	 *
+	 */
+	static class InputsList implements AutoCloseable {
+		private final Set<Entry<String, Document>> inputDocs;
+		private final List<Entry<String, InputStream>> inputStreams;
+		
+		private InputsList(Set<Entry<String, Document>> inputs) {
+			this.inputDocs = inputs;
+			this.inputStreams = inputs.stream()
+					 .map(InputsList::removeDocumentWrapper)
+					 .collect(Collectors.toList());
+		}
+		
+		// This constructor used for unit testing.
+		InputsList(List<Entry<String, InputStream>> inputStreams) {
+			this.inputDocs = Collections.emptySet();
+			this.inputStreams = inputStreams;
+		}
+
+		/**
+		 *  This method removes Adobe's Document objects because they are hard to mock and cannot therefore be used in unit
+		 *  testing.  I wish they had made the Document object an interface instead, but c'est la guerre.
+		 * 
+		 * @param entry
+		 * @return
+		 */
+		private static Entry<String, InputStream> removeDocumentWrapper(Entry<String, Document> entry) {
+			try {
+				return new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue().getInputStream());
+			} catch (IOException ex) {
+				throw new IllegalStateException("Error while reading input document input stream.", ex);
+			}
+		}
+
+		private HttpUriRequest buildRequest(String endpointLocation, String correlationId) {
+			return buildRequest(inputStreams, endpointLocation, correlationId);
+		}		
+
+		private static HttpUriRequest buildRequest(List<Entry<String, InputStream>> inputs, String endpointLocation, String correlationId) {
+			RequestBuilder reqbuilder = RequestBuilder.post(endpointLocation);
+			reqbuilder.setEntity(toMultipartEntity(inputs));
+			reqbuilder.addHeader(CorrelationId.CORRELATION_ID_HDR, correlationId);
+			return reqbuilder.build();
+		}
+
+		private static HttpEntity toMultipartEntity(List<Entry<String, InputStream>> inputsList) {
+			MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+			for (Entry<String, InputStream> entry : inputsList) {
+				builder = builder.addPart("datafiles", new InputStreamBody(entry.getValue(), entry.getKey()));
+			}
+			return builder.build();
+		}
+
+		@Override
+		public void close() throws Exception {
+			// Close everything
+			for(Entry<String, InputStream> is : inputStreams) {
+				is.getValue().close();
+			}
+			for(Entry<String, Document> id : inputDocs) {
+				id.getValue().close();
+			}
+		}
 	}
 	
 	public static class Result {
@@ -277,5 +315,3 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 		}
 	}
 }
-
-
