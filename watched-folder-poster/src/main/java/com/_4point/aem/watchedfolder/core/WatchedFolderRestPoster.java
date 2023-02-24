@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,13 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	private static final Logger log = LoggerFactory.getLogger(WatchedFolderRestPoster.class);
 	
 	public WatchedFolderRestPoster() {
+		Properties gitProperties = new Properties();
+		try {
+			gitProperties.load(this.getClass().getResourceAsStream("/git.properties"));
+			log.info((new GitCommit(gitProperties)).summary());
+		} catch (IOException e) {
+			log.warn("Unable to load git.properties.");
+		}
 	}
 
 	/**

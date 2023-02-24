@@ -41,6 +41,7 @@
 		<htl-maven-plugin.version>2.0.2-1.4.0</htl-maven-plugin.version>
 		<filevault-package-maven-plugin.version>1.1.6</filevault-package-maven-plugin.version>
 		<content-package-maven-plugin.version>1.0.2</content-package-maven-plugin.version>
+		<git-commit-id-maven-plugin.version>5.0.0</git-commit-id-maven-plugin.version>
 		<!-- Sling/AEM Dependencies -->
 		<core.wcm.components.version>2.19.0</core.wcm.components.version>
 		<io.wcm.maven.aem-dependencies.version>6.5.15.0000</io.wcm.maven.aem-dependencies.version>
@@ -55,6 +56,7 @@
 		<org.apache.sling.testing.caconfig-mock-plugin.version>1.4.0</org.apache.sling.testing.caconfig-mock-plugin.version>
 		<slf4j-test.version>1.2.0</slf4j-test.version>
 		<wiremock.version>2.35.0</wiremock.version>
+		<hamcrest.version>2.2</hamcrest.version>
 	</properties>
 
 	<distributionManagement>
@@ -170,8 +172,33 @@ Import-Package: javax.annotation;version=0.0.0,*
 					</archive>
 				</configuration>
 			</plugin>
+			<plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+				<version>${git-commit-id-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+					<dateFormat>yyyy-MM-dd'T'HH:mm:ssZ</dateFormat>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                    <commitIdGenerationMode>full</commitIdGenerationMode>
+                </configuration>
+            </plugin>
 		</plugins>
-
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
 		<pluginManagement>
 			<plugins>
 				<plugin>
@@ -632,6 +659,12 @@ Bundle-DocURL:
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest-library</artifactId>
+			<version>${hamcrest.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<!-- Required to be able to support injection with @Self and @Via -->
