@@ -174,9 +174,10 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 			for(Entry<String, InputStream> is : inputStreams) {
 				is.getValue().close();
 			}
-			for(Entry<String, Document> id : inputDocs) {
-				id.getValue().close();
-			}
+			// Don't need to close the Documents, AEM will do that for us.
+			// for(Entry<String, Document> id : inputDocs) {
+			// 	id.getValue().close();
+			// }
 		}
 	}
 	
