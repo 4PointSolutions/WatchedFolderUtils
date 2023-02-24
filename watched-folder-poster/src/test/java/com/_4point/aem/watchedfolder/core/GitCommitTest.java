@@ -70,8 +70,8 @@ class GitCommitTest {
 				()->assertEquals(EXPECTED_COMMIT_ID_ABBREV, underTest.commitIdAbbrev()),
 				()->assertEquals(EXPECTED_COMMIT_ID_FULL, underTest.commitIdFull()),
 				()->assertEquals(EXPECTED_DIRTY, underTest.dirty()),
-				()->assertEquals(DATETIME_FORMATTER.format(EXPECTED_COMMIT_TIME), DATETIME_FORMATTER.format(underTest.commitTime())),
-				()->assertEquals(DATETIME_FORMATTER.format(EXPECTED_BUILD_TIME), DATETIME_FORMATTER.format(underTest.buildTime()))
+				()->assertEquals(EXPECTED_COMMIT_TIME.toInstant(), underTest.commitTime().toInstant()),
+				()->assertEquals(EXPECTED_BUILD_TIME.toInstant(), underTest.buildTime().toInstant())
 				);
 	}
 	
@@ -86,8 +86,8 @@ class GitCommitTest {
 							containsString(EXPECTED_BRANCH), 
 							containsString(EXPECTED_COMMIT_ID_ABBREV),
 							containsString("*"),
-							containsString(EXPECTED_BUILD_TIME_NO_TIMEZONE),
-							containsString(EXPECTED_COMMIT_TIME_NO_TIMEZONE)
+							matchesPattern("^.*2023-02-24T..:44:42.*$"),	// Ignore the hours, since they will be different 
+							matchesPattern("^.*2023-02-24T..:28:32.*$")		// depending on the machine's local timezone.
 							));
 	}	
 }
