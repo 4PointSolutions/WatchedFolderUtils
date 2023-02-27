@@ -123,9 +123,10 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 		private final List<Entry<String, InputStream>> inputStreams;
 		
 		private InputsList(Set<Entry<String, Document>> inputs) {
-			this.inputStreams = inputs.stream()
-					 .map(InputsList::removeDocumentWrapper)
-					 .collect(Collectors.toList());
+			this(inputs.stream()
+					   .map(InputsList::removeDocumentWrapper)
+					   .collect(Collectors.toList())
+				 );
 		}
 		
 		// This constructor used for unit testing.
