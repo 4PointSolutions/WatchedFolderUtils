@@ -93,12 +93,14 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 			// Get the filename from the Content-Disposition header or use "result" if it's not there.
 			String filename = ContentDispositionHeader.from(httpResponse)
 					.map(ContentDispositionHeader::filename)
-					.orElse("result");
+					.orElse("results.txt");
 
 			// Get content type from the Content-Type header
 			String contentType = ContentTypeHeader.from(httpResponse)
 					.map(ContentTypeHeader::getFullValue)
 					.orElse("application/octet-stream");
+
+			log.debug("Received response of {} bytes with content-type='{}' and filename='{}'.", responseBytes.length, contentType, filename);
 			
 			ProcessingMetadata processingMetadata = metadataBuilder.finish();
 			log.info("Completed transaction '" + processingMetadata.getCorrelationId() + "' in " + processingMetadata.getFormattedElapsedTime() + ".");
