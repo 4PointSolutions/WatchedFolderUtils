@@ -4,12 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -120,11 +118,9 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	 *
 	 */
 	static class InputsList implements AutoCloseable {
-		private final Set<Entry<String, Document>> inputDocs;
 		private final List<Entry<String, InputStream>> inputStreams;
 		
 		private InputsList(Set<Entry<String, Document>> inputs) {
-			this.inputDocs = inputs;
 			this.inputStreams = inputs.stream()
 					 .map(InputsList::removeDocumentWrapper)
 					 .collect(Collectors.toList());
@@ -132,7 +128,6 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 		
 		// This constructor used for unit testing.
 		InputsList(List<Entry<String, InputStream>> inputStreams) {
-			this.inputDocs = Collections.emptySet();
 			this.inputStreams = inputStreams;
 		}
 
@@ -176,10 +171,6 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 			for(Entry<String, InputStream> is : inputStreams) {
 				is.getValue().close();
 			}
-			// Don't need to close the Documents, AEM will do that for us.
-			// for(Entry<String, Document> id : inputDocs) {
-			// 	id.getValue().close();
-			// }
 		}
 	}
 	

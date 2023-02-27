@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class GitCommit {
-	private static final Logger log = LoggerFactory.getLogger(WatchedFolderRestPoster.class);
+	private static final Logger log = LoggerFactory.getLogger(GitCommit.class);
 
 	private static final String DEFAULT_GIT_PROPERTIES_FILENAME = "/git.properties";
 
