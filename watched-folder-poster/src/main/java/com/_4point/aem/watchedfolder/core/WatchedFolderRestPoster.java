@@ -47,13 +47,7 @@ public class WatchedFolderRestPoster implements ContentProcessor {
 	private static final Logger log = LoggerFactory.getLogger(WatchedFolderRestPoster.class);
 	
 	public WatchedFolderRestPoster() {
-		Properties gitProperties = new Properties();
-		try {
-			gitProperties.load(this.getClass().getResourceAsStream("/git.properties"));
-			log.info((new GitCommit(gitProperties)).summary());
-		} catch (IOException e) {
-			log.warn("Unable to load git.properties.");
-		}
+		GitCommit.logSummary();
 	}
 
 	/**
