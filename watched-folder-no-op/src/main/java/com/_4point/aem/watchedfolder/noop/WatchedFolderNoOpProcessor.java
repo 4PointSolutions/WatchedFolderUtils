@@ -9,6 +9,7 @@ import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com._4point.aem.watchedfolder.support.Jdk8Utils;
 import com.adobe.aemfd.docmanager.Document;
 import com.adobe.aemfd.watchfolder.service.api.ContentProcessor;
 import com.adobe.aemfd.watchfolder.service.api.ProcessorContext;
@@ -46,13 +47,23 @@ public class WatchedFolderNoOpProcessor implements ContentProcessor {
 	private static void logInput(Map.Entry<String,Document> entry) throws IOException {
 		Document doc = entry.getValue();
 		Object filename = doc.getAttribute("filename");
-		log.info("Found input '{}' of type {}.", entry.getKey(), doc.getContentType());
+		String contentType = doc.getContentType();
+		log.info("Found input '{}' of type {}.", entry.getKey(), contentType);
 		if (filename != null) {
 			if (filename instanceof String) {
 				log.info("   Filename={}", (String)filename);
 			} else {
 				log.info("   Filename is instanceof {}", filename.getClass().getName());
 			}
+		}
+		if (log.isTraceEnabled() && (contentType.startsWith("text") || contentType.endsWith("xml"))) {
+			byte[] bytes = Jdk8Utils.readAllBytes(doc.getInputStream());
+			String string = new String(bytes, StandardCharsets.UTF_8);
+			log.trace("input docBytes='{}'.", string);
+			// The following lines were added in order to track down a non-visible Unicode character issue.
+			// Feel free to uncomment them if you are chasing up something similar.
+			// Files.write(Paths.get("/temp/NoOpBytes.txt"), bytes, StandardOpenOption.CREATE);
+			// Files.write(Paths.get("/temp/NoOpString.txt"), string.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
 		}
 	}
 	
