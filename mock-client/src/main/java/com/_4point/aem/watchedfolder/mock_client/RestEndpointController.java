@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -25,7 +26,7 @@ public class RestEndpointController {
 	@Autowired
 	private ObjectMapper mapper;
 	
-	@PostMapping(path = "/test/endpoint", consumes = "multipart/form-data")
+	@PostMapping(path = "/test/endpoint", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE }, produces = {MediaType.TEXT_PLAIN_VALUE})
 	@ResponseBody String endpoint(@RequestPart(required=true) List<MultipartFile> datafiles, @RequestHeader(name="x-correlation-id", required=false) String correlationIdIn) throws Exception {
 		log.atInfo().log("cid={} Starting /test/endpoint request.", correlationIdIn);
 		log.atInfo().log("cid={} Found {} datafiles.", correlationIdIn, datafiles.size());

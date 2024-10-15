@@ -3,7 +3,6 @@
 //DEPS org.springframework.boot:spring-boot-dependencies:3.3.4@pom
 //DEPS org.springframework.boot:spring-boot-starter-web
 
-//JAVA_OPTIONS -Dspring.application.name=wf-mock-client
 package com._4point.aem.watchedfolder.mock_client;
 
 import org.springframework.boot.SpringApplication;
@@ -41,7 +40,7 @@ public class mockClient {
 		@Autowired
 		private ObjectMapper mapper;
 		
-		@PostMapping(path = "/test/endpoint", consumes = "multipart/form-data")
+		@PostMapping(path = "/test/endpoint", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE }, produces = {MediaType.TEXT_PLAIN})
 		@ResponseBody String endpoint(@RequestPart(required=true) List<MultipartFile> datafiles, @RequestHeader(name="x-correlation-id", required=false) String correlationIdIn) throws Exception {
 			log.atInfo().log("cid={} Starting /test/endpoint request.", correlationIdIn);
 			log.atInfo().log("cid={} Found {} datafiles.", correlationIdIn, datafiles.size());

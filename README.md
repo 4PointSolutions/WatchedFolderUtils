@@ -28,7 +28,7 @@ After the bundle is installed successfully, it should be available for use when 
 		![Screenshot showing "Process Files Using" and "Service Name" settings](Docs/Images/WatchedFolderServiceNameExample.png)
 
 3) 	Configure endpoint to point to a REST Service
-	1) In Advance tab
+	1) Select the Advanced tab
 	2) Scroll to bottom and click Add button under Custom Properties
 	3) Enter endpoint in first field and select string for type and enter URL (e.g. http://_machine:port_/getDocument) to the REST service.  For example, this might be `http://localhost:8090/getDocument` if the REST server is running locally on port 8090 . See below for reference:
 
